@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="h264j:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/h264j_jar</output-path>
+    <root id="archive" name="h264j.jar">
+      <element id="module-output" name="h264j" />
+    </root>
+  </artifact>
+</component>
