@@ -1,9 +1,5 @@
 package com.twilight.h264.player;
 
-import static com.twilight.h264.decoder.H264Context.NAL_AUD;
-import static com.twilight.h264.decoder.H264Context.NAL_IDR_SLICE;
-import static com.twilight.h264.decoder.H264Context.NAL_SLICE;
-
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -25,6 +21,8 @@ import com.twilight.h264.decoder.H264Decoder;
 import com.twilight.h264.decoder.MpegEncContext;
 import com.twilight.h264.util.FrameUtils;
 
+import static com.twilight.h264.decoder.H264Context.*;
+
 public class H264Player implements Runnable {
 	public static final int INBUF_SIZE = 65535;
 	private PlayerFrame displayPanel;
@@ -38,9 +36,9 @@ public class H264Player implements Runnable {
 	 */
 	public static void main(String[] args) {
 //		new H264Player(args);
-//		new H264Player(new String[]{"H:\\ideaprojectTest\\h264j\\h264\\h264j\\sample_clips\\20140613093719.264", ""});
 //		new H264Player(new String[]{"H:\\ideaprojectTest\\h264j\\h264\\h264j\\sample_clips\\admiral.264"});
 		new H264Player(new String[]{"H:\\ideaprojectTest\\h264j\\h264\\h264j\\sample_clips\\slamtv10.264"});
+//		new H264Player(new String[]{"H:\\ideaprojectTest\\0503\\java-h264\\h264j\\sample_clips\\test2.264"});
 	}
 
 	public H264Player(String[] args) {
@@ -65,6 +63,7 @@ public class H264Player implements Runnable {
 		frame.pack();
 		frame.setVisible(true);
 		frame.setSize(new Dimension(645, 380));
+		frame.setSize(new Dimension(1280, 738));
 		
 		fileName = args[0];
 
@@ -81,6 +80,11 @@ public class H264Player implements Runnable {
 		int nal = code & 0x1F; //取出type
 
 		if (nal == NAL_AUD) {   //9分界符
+			foundFrameStart = false;
+			return true;
+		}
+
+		if(nal == NAL_SEI){
 			foundFrameStart = false;
 			return true;
 		}
@@ -146,10 +150,11 @@ public class H264Player implements Runnable {
 		    fin = new FileInputStream(f);
 
 		    frame = 0;
-		    int dataPointer;
+		    int dataPointer,SEIPointer;
 		    int fileOffset = 0;
 		    foundFrameStart = false;
 			int namenum = 1;
+			int[] SEIbuf = new int[INBUF_SIZE + MpegEncContext.FF_INPUT_BUFFER_PADDING_SIZE];
 		    // avpkt must contain exactly 1 NAL Unit in order for decoder to decode correctly.
 	    	// thus we must read until we get next NAL header before sending it to decoder.
 			// Find 1st NAL
@@ -207,6 +212,26 @@ public class H264Player implements Runnable {
 					 cacheRead[3] = cacheRead[4];
 					 cacheRead[4] = fin.read();
 					if (cacheRead[4]==-1) hasMoreNAL = false;
+					if (cacheRead[0] == 0x00 && cacheRead[1] == 0x00 && cacheRead[2] == 0x01 && cacheRead[3] == 0x06) {
+						SEIbuf[0] = cacheRead[0];
+						SEIbuf[1] = cacheRead[1];
+						SEIbuf[2] = cacheRead[2];
+						SEIbuf[3] = cacheRead[3];
+						SEIPointer = 4;
+						cacheRead[0] = cacheRead[4];
+						cacheRead[1] = fin.read();
+						cacheRead[2] = fin.read();
+						cacheRead[3] = fin.read();
+						while (!(cacheRead[0] == 0x00 && cacheRead[1] == 0x00 && cacheRead[2] == 0x01 && cacheRead[3] == 0x65)) {
+							SEIbuf[SEIPointer++] = cacheRead[0];
+							cacheRead[0] = cacheRead[1];
+							cacheRead[1] = cacheRead[2];
+							cacheRead[2] = cacheRead[3];
+							cacheRead[3] = fin.read();
+						}
+						cacheRead[4] = fin.read();
+						foundFrameStart = true;
+					}
 				} // while
 
 				avpkt.size = dataPointer;
@@ -241,7 +266,7 @@ public class H264Player implements Runnable {
 							displayPanel.lastFrame = displayPanel.createImage(new MemoryImageSource(imageWidth
 									, imageHeight, buffer, 0, imageWidth));
 							Image saveimage = displayPanel.lastFrame;
-							savePic(saveimage,imageWidth,imageHeight,namenum);
+//							savePic(saveimage,imageWidth,imageHeight,namenum);
 //							displayPanel.invalidate();
 							displayPanel.updateUI();
 
@@ -271,7 +296,6 @@ public class H264Player implements Runnable {
 
 	    return true;
 	}
-
 
 
 	public void savePic(Image image,int imageWidth,int imageHeight,int namexuhao){
