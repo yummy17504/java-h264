@@ -3,7 +3,6 @@
 参考自https://github.com/twilightdema/h264j 
 
 在main函数中可修改输入的.264文件路径
-
 new H264Player(new String[]{"H:\\ideaprojectTest\\h264j\\h264\\h264j\\sample_clips\\slamtv10.264"})
 
 解出的每一帧位置可修改savePic函数中的path变量：
